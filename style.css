@@ -164,3 +164,24 @@ button{-webkit-tap-highlight-color:transparent}
   .brand-name{font-size:9px;letter-spacing:.1em;}
   .logout-btn{padding:7px 8px;font-size:.58rem;}
 }
+
+/* v11 · iPhone PWA hard safe-area fix */
+@media (display-mode: standalone) and (max-width: 520px) {
+  .app-shell{
+    padding-top:max(58px, calc(env(safe-area-inset-top) + 12px)) !important;
+  }
+  .topbar{
+    position:relative;
+    z-index:20;
+  }
+}
+@supports (-webkit-touch-callout: none) {
+  @media (max-width: 520px) {
+    body{min-height:100dvh;}
+  }
+  @media (display-mode: standalone) and (max-width: 520px) {
+    .app-shell{
+      padding-top:max(64px, calc(env(safe-area-inset-top) + 14px)) !important;
+    }
+  }
+}
