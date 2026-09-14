@@ -5,7 +5,11 @@ export default async function handler(req, res) {
   const configuredUser = process.env.APP_USERNAME;
   const configuredPass = process.env.APP_PASSWORD;
   if (!configuredUser || !configuredPass || !process.env.APP_AUTH_SECRET) {
-    return res.status(500).json({ error: 'Login non configurato sul server' });
+    const missing = [];
+    if (!configuredUser) missing.push('APP_USERNAME');
+    if (!configuredPass) missing.push('APP_PASSWORD');
+    if (!process.env.APP_AUTH_SECRET) missing.push('APP_AUTH_SECRET');
+    return res.status(500).json({ error: `Login non configurato sul server. Mancano: ${missing.join(', ')}` });
   }
   const body = typeof req.body === 'object' && req.body ? req.body : {};
   const ok = safeEqual(body.username || '', configuredUser) && safeEqual(body.password || '', configuredPass);
