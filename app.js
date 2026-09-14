@@ -462,7 +462,8 @@ async function testNotification() {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', async () => {
     try {
-      await navigator.serviceWorker.register('/sw.js?v=7');
+      const registration = await navigator.serviceWorker.register('/sw.js?v=10', { updateViaCache: 'none' });
+      await registration.update();
       await navigator.serviceWorker.ready;
       syncTrainingDaysToCloud();
       getPushStatus();
