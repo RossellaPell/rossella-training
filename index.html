@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=6" />
+  <link rel="stylesheet" href="style.css?v=7" />
 </head>
 <body>
   <div class="page-noise"></div>
@@ -60,6 +60,19 @@
       </div>
       <div id="calendarGrid" class="calendar-grid"></div>
       <div id="nextWorkoutCard" class="next-workout-card"></div>
+    </section>
+
+    <section class="notifications-card card" id="notificationsCard">
+      <div class="notifications-copy">
+        <p class="eyebrow">REMINDER</p>
+        <h2>Notifica allenamento</h2>
+        <p>Ricevi un promemoria alle <strong>11:00</strong> nei giorni che hai programmato nel calendario.</p>
+        <p id="notificationStatus" class="notification-status">Controllo stato notifiche…</p>
+      </div>
+      <div class="notification-actions">
+        <button id="enableNotificationsBtn" class="btn primary" type="button">Attiva notifiche</button>
+        <button id="testNotificationBtn" class="btn ghost" type="button" hidden>Prova notifica</button>
+      </div>
     </section>
 
     <section class="preworkout card warm-card">
@@ -119,6 +132,6 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <script src="app.js?v=6"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>

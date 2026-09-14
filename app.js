@@ -40,7 +40,8 @@ const workouts = {
     ]}
 };
 
-let currentDay = localStorage.getItem('gymCurrentDay') || 'A';
+const requestedSheet = new URLSearchParams(location.search).get('sheet');
+let currentDay = ['A','B','C'].includes(requestedSheet) ? requestedSheet : (localStorage.getItem('gymCurrentDay') || 'A');
 let session = JSON.parse(localStorage.getItem('gymCurrentSession') || '{}');
 let sheetRounds = JSON.parse(localStorage.getItem('gymSheetRounds') || '{}');
 let history = JSON.parse(localStorage.getItem('gymHistory') || '[]');
@@ -79,6 +80,7 @@ function assignedSheet(dateKey){
 function persistTrainingDays(){
   trainingDays=[...new Set(trainingDays)].sort();
   localStorage.setItem('gymTrainingDays',JSON.stringify(trainingDays));
+  syncTrainingDaysToCloud();
 }
 function renderCalendar(){
   const grid=document.getElementById('calendarGrid');
@@ -305,27 +307,164 @@ document.getElementById('calendarNextBtn')?.addEventListener('click',()=>{calend
 document.getElementById('calendarTodayBtn')?.addEventListener('click',()=>{const d=new Date();calendarCursor=new Date(d.getFullYear(),d.getMonth(),1);renderCalendar()});
 render();
 
-// --- PWA + autenticazione sessione ---
+// --- PWA + notifiche + autenticazione sessione ---
+const VAPID_PUBLIC_KEY = 'BNDbJvOU-1b5Lw666E6ivf1L8S7jp3uvPjLp2Upmma4QS1MUlGFfjsCpxU7LOUpcClqcPm0thXiQ_VcEJxFfjKw';
+let cloudSyncTimer = null;
+
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - base64String.length % 4) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(char => char.charCodeAt(0)));
+}
+
+function setNotificationStatus(message, active=false) {
+  const el = document.getElementById('notificationStatus');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle('active', active);
+}
+
+async function syncTrainingDaysToCloud() {
+  clearTimeout(cloudSyncTimer);
+  cloudSyncTimer = setTimeout(async () => {
+    try {
+      await fetch('/api/calendar-sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ trainingDays })
+      });
+    } catch (_) {}
+  }, 250);
+}
+
+async function getPushStatus() {
+  try {
+    const r = await fetch('/api/push-status', { credentials: 'same-origin' });
+    const data = await r.json();
+    if (!data.redis) {
+      setNotificationStatus('Database notifiche non collegato a Vercel.');
+      return data;
+    }
+    if (!data.vapid) {
+      setNotificationStatus('Manca VAPID_PRIVATE_KEY nelle Environment Variables di Vercel.');
+      return data;
+    }
+    if (!data.qstash) {
+      setNotificationStatus('QStash non risulta collegato al progetto Vercel.');
+      return data;
+    }
+    if (typeof Notification !== 'undefined' && Notification.permission === 'denied') {
+      setNotificationStatus('Notifiche bloccate nelle impostazioni del dispositivo.');
+      return data;
+    }
+    if (data.subscribed && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      setNotificationStatus('Attive · promemoria alle 11:00 nei giorni programmati', true);
+      document.getElementById('enableNotificationsBtn').textContent = 'Notifiche attive';
+      document.getElementById('testNotificationBtn').hidden = false;
+    } else {
+      setNotificationStatus('Non ancora attive · riceverai il promemoria alle 11:00.');
+    }
+    return data;
+  } catch (_) {
+    setNotificationStatus('Impossibile controllare lo stato delle notifiche.');
+    return null;
+  }
+}
+
+async function enableNotifications() {
+  const btn = document.getElementById('enableNotificationsBtn');
+  if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+    setNotificationStatus('Questo dispositivo/browser non supporta le notifiche push.');
+    return;
+  }
+  btn.disabled = true;
+  const oldText = btn.textContent;
+  btn.textContent = 'Attivazione…';
+  try {
+    const status = await getPushStatus();
+    if (status && (!status.redis || !status.vapid || !status.qstash)) throw new Error('Configurazione server incompleta');
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') throw new Error('Permesso notifiche non concesso');
+    const registration = await navigator.serviceWorker.ready;
+    let subscription = await registration.pushManager.getSubscription();
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    let r = await fetch('/api/push-subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ subscription: subscription.toJSON() })
+    });
+    let data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Errore salvataggio notifica');
+    await fetch('/api/calendar-sync', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'same-origin',
+      body: JSON.stringify({ trainingDays })
+    });
+    r = await fetch('/api/setup-reminder', { method: 'POST', credentials: 'same-origin' });
+    data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Errore pianificazione promemoria');
+    btn.textContent = 'Notifiche attive';
+    document.getElementById('testNotificationBtn').hidden = false;
+    setNotificationStatus('Attive · promemoria alle 11:00 nei giorni programmati', true);
+    toast('Notifiche attivate alle 11:00');
+  } catch (e) {
+    btn.textContent = oldText;
+    setNotificationStatus(e.message || 'Impossibile attivare le notifiche.');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function testNotification() {
+  const btn = document.getElementById('testNotificationBtn');
+  btn.disabled = true;
+  btn.textContent = 'Invio…';
+  try {
+    const r = await fetch('/api/test-notification', { method: 'POST', credentials: 'same-origin' });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Invio non riuscito');
+    toast(data.sent ? 'Notifica di prova inviata' : 'Nessun dispositivo registrato');
+  } catch (e) {
+    setNotificationStatus(e.message || 'Errore nella notifica di prova.');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Prova notifica';
+  }
+}
+
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  window.addEventListener('load', async () => {
+    try {
+      await navigator.serviceWorker.register('/sw.js?v=7');
+      await navigator.serviceWorker.ready;
+      syncTrainingDaysToCloud();
+      getPushStatus();
+    } catch (_) {
+      setNotificationStatus('Service worker non disponibile.');
+    }
   });
 }
+
+document.getElementById('enableNotificationsBtn')?.addEventListener('click', enableNotifications);
+document.getElementById('testNotificationBtn')?.addEventListener('click', testNotification);
 
 const logoutBtn = document.getElementById('logoutBtn');
 if (logoutBtn) {
   logoutBtn.addEventListener('click', async () => {
     try {
+      const registration = await navigator.serviceWorker?.ready;
+      const subscription = await registration?.pushManager?.getSubscription();
+      if (subscription) await subscription.unsubscribe();
+      await fetch('/api/push-unsubscribe', { method: 'POST', credentials: 'same-origin' }).catch(()=>{});
       await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
     } finally {
-      if ('serviceWorker' in navigator) {
-        const regs = await navigator.serviceWorker.getRegistrations();
-        await Promise.all(regs.map(r => r.unregister()));
-      }
-      if ('caches' in window) {
-        const keys = await caches.keys();
-        await Promise.all(keys.map(k => caches.delete(k)));
-      }
       location.href = '/login.html';
     }
   });
