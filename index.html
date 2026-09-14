@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#121310" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Rossella Training" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+  <title>Rossella · Workout Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=6" />
+</head>
+<body>
+  <div class="page-noise"></div>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-block">
+        <div class="brand-mark">R</div>
+        <div>
+          <p class="brand-name">ROSSELLA / TRAINING</p>
+          <p class="brand-caption">personal workout space</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button id="resetSessionBtn" class="icon-btn" title="Nuova seduta" aria-label="Nuova seduta">↻</button>
+        <button id="logoutBtn" class="logout-btn" type="button">Esci</button>
+      </div>
+    </header>
+
+    <section class="intro-panel">
+      <p class="eyebrow light">YOUR WORKOUT</p>
+      <h1>Train.<br>Track. <span>Progress.</span></h1>
+      <div class="intro-bottom">
+        <p>Le tue tre schede, i carichi e la progressione.<br>Tutto nello stesso posto.</p>
+        <div class="mini-stat"><strong>3</strong><span>WORKOUT</span></div>
+      </div>
+    </section>
+
+    <section class="training-calendar card" id="trainingCalendarSection">
+      <div class="calendar-head">
+        <div>
+          <p class="eyebrow">TRAINING PLAN</p>
+          <h2>Calendario allenamenti</h2>
+          <p class="calendar-lead">Tocca i giorni in cui vuoi allenarti. Le schede vengono assegnate automaticamente in sequenza A → B → C.</p>
+        </div>
+        <button id="calendarTodayBtn" class="btn ghost calendar-today-btn" type="button">Oggi</button>
+      </div>
+      <div class="calendar-nav">
+        <button id="calendarPrevBtn" class="calendar-arrow" type="button" aria-label="Mese precedente">←</button>
+        <strong id="calendarMonthLabel"></strong>
+        <button id="calendarNextBtn" class="calendar-arrow" type="button" aria-label="Mese successivo">→</button>
+      </div>
+      <div class="calendar-weekdays" aria-hidden="true">
+        <span>L</span><span>M</span><span>M</span><span>G</span><span>V</span><span>S</span><span>D</span>
+      </div>
+      <div id="calendarGrid" class="calendar-grid"></div>
+      <div id="nextWorkoutCard" class="next-workout-card"></div>
+    </section>
+
+    <section class="preworkout card warm-card">
+      <button class="section-toggle" data-target="preworkoutContent">
+        <div class="toggle-copy">
+          <span class="badge neutral">PREP · 5 MIN</span>
+          <h2>Routine pre-allenamento</h2>
+          <p>Mobilità, attivazione e respirazione</p>
+        </div>
+        <span class="chevron">⌄</span>
+      </button>
+      <div id="preworkoutContent" class="collapsible open">
+        <div class="routine-list">
+          <label><input type="checkbox"> <span><strong>Respirazione diaframmatica</strong><small>01 min</small></span></label>
+          <label><input type="checkbox"> <span><strong>Cat-Cow</strong><small>01 min</small></span></label>
+          <label><input type="checkbox"> <span><strong>Glute Bridge a terra</strong><small>01 min</small></span></label>
+          <label><input type="checkbox"> <span><strong>Mobilizzazione spalle</strong><small>01 min · supporto</small></span></label>
+          <label><input type="checkbox"> <span><strong>Scarico caviglie</strong><small>01 min</small></span></label>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-kicker">
+      <span>PROGRAMMA</span>
+      <span class="line"></span>
+      <span>A / B / C</span>
+    </div>
+
+    <nav class="day-tabs" aria-label="Schede di allenamento">
+      <button class="day-tab active" data-day="A"><span class="tab-index">01</span><span>Scheda A</span></button>
+      <button class="day-tab" data-day="B"><span class="tab-index">02</span><span>Scheda B</span></button>
+      <button class="day-tab" data-day="C"><span class="tab-index">03</span><span>Scheda C</span></button>
+    </nav>
+
+    <main id="workoutContainer"></main>
+
+    <section class="history card history-card">
+      <div class="history-head">
+        <div>
+          <p class="eyebrow">PROGRESS LOG</p>
+          <h2>Storico carichi</h2>
+          <p class="history-lead">Le sedute sono raggruppate per giorno e scheda. Apri una giornata per vedere i tre WOD e i carichi utilizzati.</p>
+        </div>
+        <div class="history-actions">
+          <button id="exportBtn" class="btn ghost">Esporta</button>
+          <label class="btn ghost file-label">Importa<input id="importInput" type="file" accept="application/json" hidden></label>
+        </div>
+      </div>
+      <div id="historyContent" class="history-content"></div>
+    </section>
+
+    <footer class="app-footer">
+      <span>MOVE WITH INTENTION</span>
+      <span>·</span>
+      <span>BUILD WITH CONSISTENCY</span>
+    </footer>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="app.js?v=6"></script>
+</body>
+</html>
