@@ -142,6 +142,15 @@ function renderNextWorkout(){
   });
 }
 
+// Se oggi e un giorno di allenamento programmato, apri automaticamente
+// la scheda assegnata dal calendario (A -> B -> C). Un eventuale parametro
+// ?sheet=A/B/C nel link mantiene la precedenza.
+const todayScheduledSheet = assignedSheet(localDateKey());
+if (!requestedSheet && todayScheduledSheet) {
+  currentDay = todayScheduledSheet;
+  localStorage.setItem('gymCurrentDay', currentDay);
+}
+
 function render(){
   tabs.forEach(t=>t.classList.toggle('active', t.dataset.day===currentDay));
   const d=workouts[currentDay];
@@ -229,8 +238,12 @@ function saveWod(index){
 }
 function renderHistory(){
   const el=document.getElementById('historyContent');
+  const title=document.getElementById('historyTitle');
+  const lead=document.getElementById('historyLead');
+  if(title) title.textContent=`Progressi Scheda ${currentDay}`;
+  if(lead) lead.textContent=`Qui trovi solo gli allenamenti e i carichi salvati per la Scheda ${currentDay}.`;
   if(!history.length){
-    el.innerHTML='<div class="history-empty">Quando salvi i WOD, qui comparirà una sola voce per ogni giorno e scheda.</div>';
+    el.innerHTML=`<div class="history-empty">Non hai ancora salvataggi per la Scheda ${esc(currentDay)}.</div>`;
     return;
   }
 
@@ -268,7 +281,14 @@ function renderHistory(){
     if((r.timestamp||'')>(target.timestamp||'')) target.timestamp=r.timestamp||target.timestamp;
   });
 
-  const groups=[...dayMap.values()].sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
+  const allGroups=[...dayMap.values()].sort((a,b)=>(b.timestamp||'').localeCompare(a.timestamp||''));
+  const groups=allGroups.filter(g=>g.day===currentDay);
+
+  if(!groups.length){
+    el.innerHTML=`<div class="history-empty">Non hai ancora salvataggi per la Scheda ${esc(currentDay)}.</div>`;
+    return;
+  }
+
   el.innerHTML=groups.slice(0,20).map((g,i)=>{
     const wods=[...(g.wods||[])].sort((a,b)=>(a.index??99)-(b.index??99));
     const wodBlocks=wods.map(w=>{
