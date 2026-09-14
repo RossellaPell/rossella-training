@@ -1,6 +1,6 @@
 const COOKIE_NAME = 'rossella_auth';
 const PUBLIC_PATHS = new Set([
-  '/login.html', '/api/login', '/api/session', '/manifest.webmanifest',
+  '/login', '/login.html', '/api/login', '/api/session', '/manifest.webmanifest',
   '/icon-192.png', '/icon-512.png', '/apple-touch-icon.png', '/favicon.ico'
 ]);
 
@@ -40,7 +40,7 @@ export default async function middleware(request) {
   if (PUBLIC_PATHS.has(url.pathname) || url.pathname.startsWith('/api/')) return;
   const ok = await verifyToken(getCookie(request, COOKIE_NAME));
   if (!ok) {
-    const login = new URL('/login.html', request.url);
+    const login = new URL('/login', request.url);
     return Response.redirect(login, 307);
   }
 }
